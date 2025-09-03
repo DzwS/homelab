@@ -38,7 +38,7 @@ metadata:
   name: popeye-scan
   namespace: cluster-scanning
 spec:
-  schedule: "0 2 * * *"  # Daily at 2 AM
+  schedule: "0 8 * * *"  # Daily at 2 AM
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1
   jobTemplate:
