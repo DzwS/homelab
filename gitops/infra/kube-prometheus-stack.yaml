@@ -13,6 +13,8 @@ spec:
     targetRevision: 76.2.0
     helm:
       parameters:
+        - name: grafana.podSecurityContext.fsGroup
+          value: "472"
         - name: namespaceOverride
           value: prometheus
         - name: grafana.namespaceOverride
