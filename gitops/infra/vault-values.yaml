@@ -42,7 +42,7 @@ server:
 ui:
   enabled: true
   serviceType: LoadBalancer
-  loadBalancerIP: 192.168.178.92
+  loadBalancerIP: 192.168.5.152
 
 # Resource limits
 resources:

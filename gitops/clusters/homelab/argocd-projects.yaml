@@ -8,7 +8,7 @@ metadata:
 spec:
   description: Core infrastructure components
   sourceRepos:
-  - https://github.com/Piotr1215/homelab
+  - https://github.com/DzwS/homelab
   - https://prometheus-community.github.io/helm-charts
   - https://grafana.github.io/helm-charts
   - https://metallb.github.io/metallb
@@ -45,7 +45,7 @@ metadata:
 spec:
   description: Platform services and utilities
   sourceRepos:
-  - https://github.com/Piotr1215/homelab
+  - https://github.com/DzwS/homelab
   - https://charts.external-secrets.io
   - https://charts.jetstack.io
   - https://kubernetes.github.io/ingress-nginx
@@ -81,7 +81,7 @@ metadata:
 spec:
   description: User-facing applications
   sourceRepos:
-  - https://github.com/Piotr1215/homelab
+  - https://github.com/DzwS/homelab
   destinations:
   - namespace: homepage
     server: https://kubernetes.default.svc
