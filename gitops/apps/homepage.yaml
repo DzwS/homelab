@@ -375,7 +375,7 @@ metadata:
     app.kubernetes.io/version: v1.2.0
     helm.sh/chart: homepage-2.1.0
   annotations:
-    metallb.universe.tf/loadBalancerIPs: "192.168.178.93"
+    metallb.universe.tf/loadBalancerIPs: "192.168.5.160"
 spec:
   type: LoadBalancer
   ports:
