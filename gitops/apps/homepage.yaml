@@ -49,7 +49,7 @@ data:
           showStats: true
           widget:
             type: argocd
-            url: https://argocd-server.argocd.svc.cluster.local
+            url: http://argocd-server.argocd.svc.cluster.local
             key: {{HOMEPAGE_VAR_ARGOCD_TOKEN}}
     - Observability:
       - Prometheus:
