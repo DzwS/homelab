@@ -19,9 +19,6 @@ data:
   N8N_LOG_LEVEL: "info"
   N8N_METRICS: "true"
   N8N_SECURE_COOKIE: "false"
-  # 修复代理相关配置
-  N8N_PROXY_HOPS: "1"
-  N8N_DISABLE_PRODUCTION_MAIN_PROCESS: "false"
   # Database configuration
   DB_TYPE: "postgresdb"
   DB_POSTGRESDB_HOST: "postgresql.n8n.svc.cluster.local"
@@ -105,16 +102,6 @@ spec:
             configMapKeyRef:
               name: n8n-config
               key: N8N_SECURE_COOKIE
-        - name: N8N_PROXY_HOPS
-          valueFrom:
-            configMapKeyRef:
-              name: n8n-config
-              key: N8N_PROXY_HOPS
-        - name: N8N_DISABLE_PRODUCTION_MAIN_PROCESS
-          valueFrom:
-            configMapKeyRef:
-              name: n8n-config
-              key: N8N_DISABLE_PRODUCTION_MAIN_PROCESS
         # Database configuration
         - name: DB_TYPE
           valueFrom:
