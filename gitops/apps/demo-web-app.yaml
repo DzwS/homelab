@@ -1,0 +1,115 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-app-v1
+  namespace: demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: web-app
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: web-app
+        version: v1
+    spec:
+      containers:
+        - name: web
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+              name: http
+          volumeMounts:
+            - name: web-content
+              mountPath: /usr/share/nginx/html
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "25m"
+            limits:
+              memory: "64Mi"
+              cpu: "50m"
+      volumes:
+        - name: web-content
+          configMap:
+            name: web-content-v1
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: web-content-v1
+  namespace: demo
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Web App v1</title>
+        <style>
+            body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; background-color: #e3f2fd; }
+            h1 { color: #1976d2; }
+            .info { background: white; margin: 20px auto; padding: 20px; width: 300px; border-radius: 10px; }
+        </style>
+    </head>
+    <body>
+        <h1>Web Application v1.0</h1>
+        <div class="info">
+            <p><strong>Service:</strong> web-app</p>
+            <p><strong>Version:</strong> v1.0</p>
+            <p><strong>Status:</strong> Running</p>
+            <p><strong>Pod:</strong> <span id="hostname"></span></p>
+        </div>
+        <script>
+            document.getElementById('hostname').textContent = window.location.hostname;
+        </script>
+    </body>
+    </html>
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-app
+  namespace: demo
+spec:
+  selector:
+    app: web-app
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: consul-register-webapp
+  namespace: demo
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: consul-register
+          image: curlimages/curl:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              # 注册 web-app 到 Consul
+              curl -X PUT http://consul-server.consul.svc.cluster.local:8500/v1/agent/service/register \
+                -H 'Content-Type: application/json' \
+                -d '{
+                  "ID": "web-app-1",
+                  "Name": "web-app",
+                  "Tags": ["web", "frontend", "v1"],
+                  "Address": "web-app.demo.svc.cluster.local",
+                  "Port": 80,
+                  "Check": {
+                    "HTTP": "http://web-app.demo.svc.cluster.local:80/",
+                    "Interval": "10s"
+                  }
+                }'
+              
+              echo "Web app registered to Consul"

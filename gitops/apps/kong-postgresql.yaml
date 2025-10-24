@@ -1,0 +1,135 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kong
+  labels:
+    name: kong
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kong-postgres
+  namespace: kong
+type: Opaque
+stringData:
+  postgres-user: kong
+  postgres-password: kongpass123
+  postgres-db: kong
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kong-config
+  namespace: kong
+data:
+  KONG_DATABASE: postgres
+  KONG_PG_HOST: kong-postgresql
+  KONG_PG_PORT: "5432"
+  KONG_PG_DATABASE: kong
+  KONG_PG_USER: kong
+  KONG_PG_PASSWORD: kongpass123
+  KONG_PROXY_ACCESS_LOG: /dev/stdout
+  KONG_ADMIN_ACCESS_LOG: /dev/stdout  
+  KONG_PROXY_ERROR_LOG: /dev/stderr
+  KONG_ADMIN_ERROR_LOG: /dev/stderr
+  KONG_ADMIN_LISTEN: "0.0.0.0:8001"
+  KONG_ADMIN_GUI_LISTEN: "0.0.0.0:8002"
+  KONG_PLUGINS: "bundled"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-postgresql
+  namespace: kong
+spec:
+  type: ClusterIP
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+  selector:
+    app: kong-postgresql
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kong-postgres-pvc
+  namespace: kong
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kong-postgresql
+  namespace: kong
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kong-postgresql
+  template:
+    metadata:
+      labels:
+        app: kong-postgresql
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: kong-postgres
+                  key: postgres-user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: kong-postgres
+                  key: postgres-password
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: kong-postgres
+                  key: postgres-db
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          ports:
+            - containerPort: 5432
+              name: postgres
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - kong
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - kong
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: kong-postgres-pvc

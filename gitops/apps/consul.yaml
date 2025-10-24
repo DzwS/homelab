@@ -1,0 +1,143 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: consul
+  labels:
+    name: consul
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: consul-server
+  namespace: consul
+  labels:
+    app: consul-server
+spec:
+  ports:
+    - name: http
+      port: 8500
+      targetPort: 8500
+    - name: rpc
+      port: 8400
+      targetPort: 8400
+    - name: serf-lan
+      port: 8301
+      targetPort: 8301
+    - name: serf-wan
+      port: 8302
+      targetPort: 8302
+    - name: server
+      port: 8300
+      targetPort: 8300
+    - name: grpc
+      port: 8502
+      targetPort: 8502
+    - name: grpc-tls
+      port: 8503
+      targetPort: 8503
+  clusterIP: None
+  selector:
+    app: consul-server
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: consul-ui
+  namespace: consul
+  labels:
+    app: consul-server
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 8500
+      targetPort: 8500
+  selector:
+    app: consul-server
+  loadBalancerIP: 192.168.5.158
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: consul-server
+  namespace: consul
+spec:
+  serviceName: consul-server
+  replicas: 3
+  selector:
+    matchLabels:
+      app: consul-server
+  template:
+    metadata:
+      labels:
+        app: consul-server
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: consul
+          image: hashicorp/consul:1.17.0
+          args:
+            - "agent"
+            - "-server" 
+            - "-bootstrap-expect=3"
+            - "-datacenter=homelab"
+            - "-data-dir=/consul/data"
+            - "-bind=0.0.0.0"
+            - "-client=0.0.0.0"
+            - "-retry-join=consul-server-0.consul-server.consul.svc.cluster.local"
+            - "-retry-join=consul-server-1.consul-server.consul.svc.cluster.local" 
+            - "-retry-join=consul-server-2.consul-server.consul.svc.cluster.local"
+            - "-ui"
+            - "-log-level=INFO"
+          env:
+            - name: CONSUL_BIND_INTERFACE
+              value: "eth0"
+            - name: CONSUL_CLIENT_INTERFACE  
+              value: "eth0"
+          ports:
+            - containerPort: 8500
+              name: http
+            - containerPort: 8400
+              name: rpc
+            - containerPort: 8301
+              name: serf-lan
+            - containerPort: 8302
+              name: serf-wan
+            - containerPort: 8300
+              name: server
+            - containerPort: 8502
+              name: grpc
+            - containerPort: 8503
+              name: grpc-tls
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: consul-data
+              mountPath: /consul/data
+          livenessProbe:
+            httpGet:
+              path: /v1/status/leader
+              port: 8500
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /v1/status/leader
+              port: 8500
+            initialDelaySeconds: 15
+            timeoutSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: consul-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 10Gi
